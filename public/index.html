@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+  <meta charset="UTF-8">
+  <title>Cliente Web - API Gateway</title>
+  <style>
+    body { font-family: sans-serif; margin: 30px; max-width: 600px; }
+    .box { border: 1px solid #ccc; padding: 15px; border-radius: 5px; margin-bottom: 20px; }
+    pre { background: #f4f4f4; padding: 10px; border-radius: 4px; overflow-x: auto; }
+  </style>
+</head>
+<body>
+  <h2>Cliente Web do API Gateway</h2>
+
+  <!-- Passos do App -->
+  <div class="box">
+    <h3>1. Login (Obter Token JWT)</h3>
+    <input type="text" id="username" placeholder="Seu nome" value="aluno">
+    <button onclick="login()">Fazer Login</button>
+  </div>
+
+  <div class="box">
+    <h3>2. Consultar Tarefas (Passa pelo Gateway via JWT)</h3>
+    <button onclick="getTodos()">Buscar Tarefas</button>
+  </div>
+
+  <div class="box">
+    <h3>Resposta da API (Note os links HATEOAS):</h3>
+    <pre id="output">Faça o login primeiro...</pre>
+  </div>
+
+  <script>
+    let token = '';
+
+    async function login() {
+      const username = document.getElementById('username').value;
+      const res = await fetch('/api/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ username })
+      });
+      const data = await res.json();
+      if (data.token) {
+        token = data.token;
+        document.getElementById('output').innerText = "Login realizado com sucesso!\nToken JWT salvo.\n\nResposta do Gateway:\n" + JSON.stringify(data, null, 2);
+      } else {
+        document.getElementById('output').innerText = "Erro ao logar.";
+      }
+    }
+
+    async function getTodos() {
+      if (!token) {
+        alert('Faça o login primeiro para obter o token JWT!');
+        return;
+      }
+      const res = await fetch('/api/todos', {
+        headers: { 'Authorization': 'Bearer ' + token }
+      });
+      const data = await res.json();
+      document.getElementById('output').innerText = JSON.stringify(data, null, 2);
+    }
+  </script>
+</body>
+</html>
