@@ -3,14 +3,16 @@ const app = express();
 app.use(express.json());
 
 let todos = [
-  { id: 1, title: "Estudar para a apresentação", done: false },
-  { id: 2, title: "Entregar o trabalho", done: true }
+  { id: 1, title: "Apresentar o trabalho de DSD", done: false },
+  { id: 2, title: "Testar o API Gateway com JWT", done: true }
 ];
 
 app.get('/todos', (req, res) => res.json(todos));
 
 app.post('/todos', (req, res) => {
   const { title } = req.body;
+  if (!title) return res.status(400).json({ error: "Título é obrigatório" });
+
   const newTodo = { id: todos.length + 1, title, done: false };
   todos.push(newTodo);
   res.status(201).json(newTodo);

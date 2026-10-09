@@ -7,26 +7,24 @@ const swaggerDocument = require('./swagger.json');
 const app = express();
 app.use(cors());
 app.use(express.json());
-app.use(express.static('public')); // Serve o Cliente Web Frontend
+app.use(express.static('public'));
 
 const SECRET_KEY = "chave_secreta_faculdade";
 
-// Middleware de Autenticação JWT
 function verifyJWT(req, res, next) {
   const token = req.headers['authorization']?.split(' ')[1];
-  if (!token) return res.status(401).json({ error: "Token não fornecido" });
+  if (!token) return res.status(401).json({ error: "Token JWT não fornecido" });
 
   jwt.verify(token, SECRET_KEY, (err, decoded) => {
-    if (err) return res.status(403).json({ error: "Token inválido" });
+    if (err) return res.status(403).json({ error: "Token inválido ou expirado" });
     req.user = decoded;
     next();
   });
 }
 
-// Documentação Swagger
 app.use('/docs', swaggerUi.serve, swaggerUi.setup(swaggerDocument));
 
-// Redirecionamento 1: Autenticação -> API Users (3001)
+// Login -> Redireciona para API 3001
 app.post('/api/login', async (req, res) => {
   try {
     const response = await fetch('http://localhost:3001/login', {
@@ -36,42 +34,41 @@ app.post('/api/login', async (req, res) => {
     });
     const data = await response.json();
 
-    // HATEOAS na resposta de Login
     if (data.token) {
       data._links = {
         self: { href: "/api/login", method: "POST" },
-        get_todos: { href: "/api/todos", method: "GET", title: "Listar Tarefas (Requer JWT)" }
+        get_todos: { href: "/api/todos", method: "GET", title: "Listar Tarefas" },
+        create_todo: { href: "/api/todos", method: "POST", title: "Criar Tarefa" }
       };
     }
 
     res.status(response.status).json(data);
   } catch (err) {
-    res.status(500).json({ error: "Erro ao comunicar com API de Usuários" });
+    res.status(500).json({ error: "Erro na comunicação com a API de Usuários" });
   }
 });
 
-// Redirecionamento 2: Listar Tarefas -> API Todos (3002) - Protegido por JWT + HATEOAS
+// Listar Tarefas -> API 3002 (Com HATEOAS)
 app.get('/api/todos', verifyJWT, async (req, res) => {
   try {
     const response = await fetch('http://localhost:3002/todos');
     const todos = await response.json();
 
-    // Aplicação do conceito de HATEOAS na resposta
     const responseWithHateoas = {
       data: todos,
       _links: {
         self: { href: "/api/todos", method: "GET" },
-        create_todo: { href: "/api/todos", method: "POST", title: "Criar Nova Tarefa" }
+        create_todo: { href: "/api/todos", method: "POST", title: "Cadastrar Nova Tarefa" }
       }
     };
 
     res.json(responseWithHateoas);
   } catch (err) {
-    res.status(500).json({ error: "Erro ao comunicar com API de Tarefas" });
+    res.status(500).json({ error: "Erro na comunicação com a API de Tarefas" });
   }
 });
 
-// Redirecionamento 3: Criar Tarefa -> API Todos (3002) - Protegido por JWT
+// Criar Tarefa -> API 3002 (Com HATEOAS)
 app.post('/api/todos', verifyJWT, async (req, res) => {
   try {
     const response = await fetch('http://localhost:3002/todos', {
@@ -80,11 +77,10 @@ app.post('/api/todos', verifyJWT, async (req, res) => {
       body: JSON.stringify(req.body)
     });
     const data = await response.json();
-    
-    // HATEOAS no recurso criado
+
     data._links = {
       self: { href: "/api/todos", method: "POST" },
-      list_all: { href: "/api/todos", method: "GET" }
+      list_all: { href: "/api/todos", method: "GET", title: "Ver Lista Atualizada" }
     };
 
     res.status(201).json(data);
@@ -93,7 +89,7 @@ app.post('/api/todos', verifyJWT, async (req, res) => {
   }
 });
 
-app.listen(3000, () => {
-  console.log("API Gateway rodando em http://localhost:3000");
-  console.log("Documentação Swagger disponível em http://localhost:3000/docs");
+app.listen(3000, '0.0.0.0', () => {
+  console.log("API Gateway rodando na porta 3000");
+  console.log("Swagger: http://localhost:3000/docs");
 });

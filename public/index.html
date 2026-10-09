@@ -2,63 +2,249 @@
 <html lang="pt-br">
 <head>
   <meta charset="UTF-8">
-  <title>Cliente Web - API Gateway</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Gerenciador de Tarefas - API Gateway</title>
   <style>
-    body { font-family: sans-serif; margin: 30px; max-width: 600px; }
-    .box { border: 1px solid #ccc; padding: 15px; border-radius: 5px; margin-bottom: 20px; }
-    pre { background: #f4f4f4; padding: 10px; border-radius: 4px; overflow-x: auto; }
+    :root {
+      --bg-color: #f7f4ef;
+      --card-bg: #ffffff;
+      --primary: #8c6d58;
+      --primary-hover: #725542;
+      --text-color: #4a3e3d;
+      --accent: #d9c5b2;
+      --border: #e6ded6;
+    }
+
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background-color: var(--bg-color);
+      color: var(--text-color);
+      margin: 0;
+      padding: 30px 15px;
+      display: flex;
+      justify-content: center;
+    }
+
+    .container {
+      width: 100%;
+      max-width: 650px;
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+    }
+
+    .header {
+      text-align: center;
+      margin-bottom: 10px;
+    }
+
+    .header h1 {
+      margin: 0;
+      color: var(--primary);
+      font-size: 24px;
+    }
+
+    .card {
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 20px;
+      box-shadow: 0 4px 6px rgba(0,0,0,0.02);
+    }
+
+    .status-bar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 14px;
+      padding: 10px 15px;
+      background: var(--accent);
+      border-radius: 6px;
+      color: #3d312a;
+    }
+
+    .form-group {
+      display: flex;
+      gap: 10px;
+      margin-top: 10px;
+    }
+
+    input[type="text"] {
+      flex: 1;
+      padding: 10px;
+      border: 1px solid var(--border);
+      border-radius: 5px;
+      outline: none;
+      background-color: #faf9f6;
+    }
+
+    button {
+      background-color: var(--primary);
+      color: white;
+      border: none;
+      padding: 10px 16px;
+      border-radius: 5px;
+      cursor: pointer;
+      font-weight: 600;
+      transition: background 0.2s;
+    }
+
+    button:hover {
+      background-color: var(--primary-hover);
+    }
+
+    button.secondary {
+      background-color: transparent;
+      border: 1px solid var(--primary);
+      color: var(--primary);
+    }
+
+    button.secondary:hover {
+      background-color: var(--accent);
+    }
+
+    .todo-list {
+      list-style: none;
+      padding: 0;
+      margin: 15px 0 0 0;
+    }
+
+    .todo-item {
+      padding: 10px;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .json-box {
+      background-color: #2e2a27;
+      color: #f1e9df;
+      padding: 12px;
+      border-radius: 6px;
+      font-size: 12px;
+      max-height: 200px;
+      overflow-y: auto;
+    }
   </style>
 </head>
 <body>
-  <h2>Cliente Web do API Gateway</h2>
 
-  <!-- Passos do App -->
-  <div class="box">
-    <h3>1. Login (Obter Token JWT)</h3>
-    <input type="text" id="username" placeholder="Seu nome" value="aluno">
-    <button onclick="login()">Fazer Login</button>
+<div class="container">
+  <div class="header">
+    <h1>Gerenciador de Tarefas</h1>
+    <small>Arquitetura API Gateway + HATEOAS + JWT</small>
   </div>
 
-  <div class="box">
-    <h3>2. Consultar Tarefas (Passa pelo Gateway via JWT)</h3>
-    <button onclick="getTodos()">Buscar Tarefas</button>
+  <!-- Status de Autenticação -->
+  <div class="status-bar">
+    <span id="userStatus">Status: <b>Não autenticado</b></span>
+    <button id="btnLogout" class="secondary" style="display:none;" onclick="logout()">Sair</button>
   </div>
 
-  <div class="box">
-    <h3>Resposta da API (Note os links HATEOAS):</h3>
-    <pre id="output">Faça o login primeiro...</pre>
+  <!-- Bloco de Login -->
+  <div class="card" id="loginCard">
+    <h3>1. Autenticação (Obter Token JWT)</h3>
+    <div class="form-group">
+      <input type="text" id="username" placeholder="Digite seu nome..." value="aluno">
+      <button onclick="login()">Entrar</button>
+    </div>
   </div>
 
-  <script>
-    let token = '';
+  <!-- Bloco do App (Invisível antes do Login) -->
+  <div class="card" id="appCard" style="display: none;">
+    <h3>2. Cadastrar Nova Tarefa</h3>
+    <div class="form-group">
+      <input type="text" id="todoTitle" placeholder="O que precisa ser feito?">
+      <button onclick="addTodo()">Cadastrar</button>
+    </div>
 
-    async function login() {
-      const username = document.getElementById('username').value;
-      const res = await fetch('/api/login', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ username })
-      });
-      const data = await res.json();
-      if (data.token) {
-        token = data.token;
-        document.getElementById('output').innerText = "Login realizado com sucesso!\nToken JWT salvo.\n\nResposta do Gateway:\n" + JSON.stringify(data, null, 2);
-      } else {
-        document.getElementById('output').innerText = "Erro ao logar.";
-      }
+    <h3 style="margin-top: 25px;">Suas Tarefas</h3>
+    <button class="secondary" onclick="getTodos()">Atualizar Lista</button>
+    <ul class="todo-list" id="todoList"></ul>
+  </div>
+
+  <!-- Inspeção do Retorno HATEOAS -->
+  <div class="card">
+    <h3>Resposta JSON do Gateway (HATEOAS em tempo real):</h3>
+    <pre class="json-box" id="jsonOutput">Aguardando ações...</pre>
+  </div>
+</div>
+
+<script>
+  let token = '';
+
+  async function login() {
+    const username = document.getElementById('username').value;
+    if (!username) return alert('Digite um nome');
+
+    const res = await fetch('/api/login', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ username })
+    });
+
+    const data = await res.json();
+    if (data.token) {
+      token = data.token;
+      document.getElementById('userStatus').innerHTML = `Usuário: <b>${data.user}</b>`;
+      document.getElementById('loginCard').style.display = 'none';
+      document.getElementById('appCard').style.display = 'block';
+      document.getElementById('btnLogout').style.display = 'inline-block';
+      document.getElementById('jsonOutput').innerText = JSON.stringify(data, null, 2);
+      getTodos();
+    } else {
+      alert('Erro no login');
     }
+  }
 
-    async function getTodos() {
-      if (!token) {
-        alert('Faça o login primeiro para obter o token JWT!');
-        return;
-      }
-      const res = await fetch('/api/todos', {
-        headers: { 'Authorization': 'Bearer ' + token }
+  function logout() {
+    token = '';
+    document.getElementById('userStatus').innerHTML = `Status: <b>Não autenticado</b>`;
+    document.getElementById('loginCard').style.display = 'block';
+    document.getElementById('appCard').style.display = 'none';
+    document.getElementById('btnLogout').style.display = 'none';
+    document.getElementById('jsonOutput').innerText = 'Sessão encerrada.';
+  }
+
+  async function getTodos() {
+    const res = await fetch('/api/todos', {
+      headers: { 'Authorization': 'Bearer ' + token }
+    });
+    const data = await res.json();
+    document.getElementById('jsonOutput').innerText = JSON.stringify(data, null, 2);
+
+    if (data.data) {
+      const list = document.getElementById('todoList');
+      list.innerHTML = '';
+      data.data.forEach(item => {
+        const li = document.createElement('li');
+        li.className = 'todo-item';
+        li.innerHTML = `<span>${item.id}. ${item.title}</span>`;
+        list.appendChild(li);
       });
-      const data = await res.json();
-      document.getElementById('output').innerText = JSON.stringify(data, null, 2);
     }
-  </script>
+  }
+
+  async function addTodo() {
+    const titleInput = document.getElementById('todoTitle');
+    const title = titleInput.value;
+    if (!title) return alert('Digite o título da tarefa');
+
+    const res = await fetch('/api/todos', {
+      method: 'POST',
+      headers: { 
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer ' + token 
+      },
+      body: JSON.stringify({ title })
+    });
+
+    const data = await res.json();
+    document.getElementById('jsonOutput').innerText = JSON.stringify(data, null, 2);
+    titleInput.value = '';
+    getTodos();
+  }
+</script>
 </body>
 </html>

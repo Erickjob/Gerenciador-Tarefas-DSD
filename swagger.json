@@ -3,7 +3,7 @@
   "info": {
     "title": "API Gateway - Gerenciador de Tarefas",
     "version": "1.0.0",
-    "description": "API Gateway integrando serviços de Usuários e Tarefas com JWT e HATEOAS"
+    "description": "API Gateway unificando microsserviços com JWT e HATEOAS"
   },
   "paths": {
     "/api/login": {
@@ -16,24 +16,38 @@
               "schema": {
                 "type": "object",
                 "properties": {
-                  "username": { "type": "string", "example": "aluno" }
+                  "username": { "type": "string", "example": "erick" }
                 }
               }
             }
           }
         },
-        "responses": {
-          "200": { "description": "Sucesso" }
-        }
+        "responses": { "200": { "description": "Sucesso" } }
       }
     },
     "/api/todos": {
       "get": {
-        "summary": "Retorna lista de tarefas com links HATEOAS (Requer JWT)",
+        "summary": "Lista todas as tarefas (Requer JWT)",
         "security": [{ "bearerAuth": [] }],
-        "responses": {
-          "200": { "description": "Sucesso" }
-        }
+        "responses": { "200": { "description": "Sucesso" } }
+      },
+      "post": {
+        "summary": "Cadastra uma nova tarefa (Requer JWT)",
+        "security": [{ "bearerAuth": [] }],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "title": { "type": "string", "example": "Nova tarefa do laboratório" }
+                }
+              }
+            }
+          }
+        },
+        "responses": { "201": { "description": "Criado com sucesso" } }
       }
     }
   },
